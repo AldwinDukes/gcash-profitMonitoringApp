@@ -29,12 +29,12 @@ export default function Dashboard() {
     transDateTime: "",
     chargeAmount: 0,
     accountName: "",
-    receiptImg: null,
   });
   const totalProfit = addTrans.reduce(
     (total, trans) => total + Number(trans.chargeAmount),
     0,
   );
+  const [tempImg, setTempImg] = useState(null);
 
   const clearInputForm = () => {
     setTransactionData({
@@ -43,8 +43,8 @@ export default function Dashboard() {
       transDateTime: "",
       chargeAmount: 0,
       accountName: "",
-      receiptImg: null,
     });
+    setTempImg(null);
   };
 
   const handleChange = (e) => {
@@ -62,19 +62,31 @@ export default function Dashboard() {
   };
 
   const processReceiptData = (lines) => {
+    // Check if it's a GCash receipt (looking for specific keywords)
+    const isGcash = lines.some((line) => line.toLowerCase().includes("gcash"));
+
+    if (!isGcash) {
+      toast.error("Invalid receipt! Please upload a GCash screenshot.");
+      setTempImg(null); // Remove the preview immediately
+      return;
+    }
+
     if (!lines || lines.length < 10) {
       toast.error("Receipt format not recognized. Please try a clearer photo.");
       setLoading(false);
       return;
     }
 
+    // console.log(lines);
+
     const type = lines.some((line) => line.includes(STORE_GCASH_NUMBER))
       ? "Cash Out"
       : "Cash In";
-    const dateAndTime = lines[9] || "Date not found";
+
+    const dateAndTime = lines[8] || "Date not found";
     const name = lines[0] || "Name not found";
 
-    const strAmount = lines[7] || "";
+    const strAmount = lines[4] || "";
     const strAmountToNum = Number(strAmount.replace(/,/g, ""));
 
     if (isNaN(strAmountToNum) || strAmountToNum === 0) {
@@ -85,7 +97,7 @@ export default function Dashboard() {
     const charge = calculateCharge(strAmountToNum);
 
     setTransactionData((prev) => ({
-      ...prev, // Keep the receiptImg that was set in handleFileChange!
+      ...prev,
       transType: type,
       transDateTime: dateAndTime,
       accountName: name,
@@ -93,49 +105,6 @@ export default function Dashboard() {
       chargeAmount: charge,
     }));
   };
-
-  // const getTransactionType = (lines) => {
-  //   const storeGcashNumber = "+63 975 596 1986";
-  //   const type = lines.includes(storeGcashNumber) ? "Cash Out" : "Cash In";
-
-  //   setTransactionData((prev) => ({
-  //     ...prev,
-  //     transType: type,
-  //   }));
-  // };
-
-  // const getDateTime = (lines) => {
-  //   const dateAndTime = lines[9];
-
-  //   setTransactionData((prev) => ({
-  //     ...prev,
-  //     transDateTime: dateAndTime,
-  //   }));
-  // };
-
-  // const getName = (lines) => {
-  //   const name = lines[0];
-  //   setTransactionData((prev) => ({ ...prev, accountName: name }));
-  // };
-
-  // const getAmount = (lines) => {
-  //   const strAmount = lines[7];
-  //   const strAmountToNum = Number(strAmount.replace(/,/g, ""));
-
-  //   if (isNaN(strAmountToNum)) {
-  //     toast.error("Please upload a valid receipt!");
-  //     clearInputForm();
-  //     return;
-  //   }
-
-  //   setTransactionData((prev) => ({
-  //     ...prev,
-  //     amount: strAmountToNum,
-  //     chargeAmount: charge,
-  //   }));
-
-  //   const charge = calculateCharge(setTransactionData.amount);
-  // }; // str to num => remove (,) comma
 
   const handleOCR = async (image) => {
     try {
@@ -164,19 +133,16 @@ export default function Dashboard() {
       // use the converImg function to convert the inserted file to base64
       const processedImage = await base64Converter(file);
 
-      setTransactionData((prev) => ({
-        ...prev,
-        receiptImg: processedImage,
-      }));
+      setTempImg(processedImage);
 
-      handleOCR(processedImage);
+      handleOCR(processedImage); // Send to OCR for validation
     } catch (error) {
       console.log("Image conversion failed:", error);
     }
   };
 
   const handleAddTransHistory = () => {
-    if (!transactionData.receiptImg) {
+    if (!tempImg) {
       toast.error("Please upload receipt!");
       return;
     }
@@ -286,12 +252,18 @@ export default function Dashboard() {
             </div>
 
             <div>
-              {!transactionData.receiptImg && (
+              {/* {!transactionData.receiptImg && (
                 <UploadImageForm fileHandle={handleFileChage} />
               )}
 
               {transactionData.receiptImg && (
                 <PreviewReceipt image={transactionData.receiptImg} />
+              )} */}
+
+              {tempImg === null ? (
+                <UploadImageForm fileHandle={handleFileChage} />
+              ) : (
+                <PreviewReceipt image={tempImg} />
               )}
             </div>
 
