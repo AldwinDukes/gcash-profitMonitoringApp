@@ -1,6 +1,8 @@
 import { IoWalletOutline } from "react-icons/io5";
 import { IoMdTrendingUp } from "react-icons/io";
 import { GrNotes } from "react-icons/gr";
+import { IoIosMenu } from "react-icons/io";
+
 import { useState } from "react";
 
 import { ToastContainer, toast, Zoom } from "react-toastify";
@@ -35,6 +37,13 @@ export default function Dashboard() {
     0,
   );
   const [tempImg, setTempImg] = useState(null);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // If isExpanded is true, show everything.
+  // If false, only show the first 3.
+  const visibleTransactions = isExpanded ? addTrans : addTrans.slice(0, 3);
 
   const clearInputForm = () => {
     setTransactionData({
@@ -77,8 +86,6 @@ export default function Dashboard() {
       return;
     }
 
-    // console.log(lines);
-
     const type = lines.some((line) => line.includes(STORE_GCASH_NUMBER))
       ? "Cash Out"
       : "Cash In";
@@ -110,9 +117,9 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      const rawText = await fetchDataFromOCR(image);
+      const rawText = await fetchDataFromOCR(image); // converting the image to text
 
-      rawTextToJsonFile(rawText);
+      rawTextToJsonFile(rawText); // converting the text to JSON file
     } catch (error) {
       console.log(error.message);
       toast.error("Please insert a valid receipt!");
@@ -130,8 +137,7 @@ export default function Dashboard() {
     if (!file) return;
 
     try {
-      // use the converImg function to convert the inserted file to base64
-      const processedImage = await base64Converter(file);
+      const processedImage = await base64Converter(file); // converting the image to base64 format
 
       setTempImg(processedImage);
 
@@ -252,14 +258,6 @@ export default function Dashboard() {
             </div>
 
             <div>
-              {/* {!transactionData.receiptImg && (
-                <UploadImageForm fileHandle={handleFileChage} />
-              )}
-
-              {transactionData.receiptImg && (
-                <PreviewReceipt image={transactionData.receiptImg} />
-              )} */}
-
               {tempImg === null ? (
                 <UploadImageForm fileHandle={handleFileChage} />
               ) : (
@@ -279,27 +277,37 @@ export default function Dashboard() {
         </section>
 
         <section className="border border-neutral-200 shadow-md rounded-md">
-          <div className="flex gap-2 items-center p-4">
-            <GrNotes size={20} />
-            <h3 className="font-semibold">Transaction History</h3>
+          <div className="flex justify-between items-center p-4">
+            <div className="flex gap-2 items-center">
+              <h3 className="font-semibold">Transaction History</h3>
+            </div>
+            <button className="font-semibold text-sm text-red-600">
+              Clear all
+            </button>
           </div>
 
           {addTrans.length > 0 ? (
             <section>
-              {addTrans.map((trans, index) => (
+              {/* Map through the SLICED array here */}
+              {visibleTransactions.map((trans, index) => (
                 <CreateTransactionHistory key={index} {...trans} />
               ))}
+
+              {/* Only show the "See All" button if there are more than 3 items */}
+              {addTrans.length > 3 && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="w-full py-3 text-sm font-medium text-blue-600 hover:bg-gray-50 border-t border-gray-100 transition-colors"
+                >
+                  {isExpanded
+                    ? "Show Less"
+                    : `See All (${addTrans.length - 3} more)`}
+                </button>
+              )}
             </section>
           ) : (
             <section className="flex flex-col items-center p-8">
-              <GrNotes
-                size={40}
-                color="oklch(70.7% 0.022 261.325)"
-                className="mb-2"
-              />
-              <p className="font-extralight text-center text-sm">
-                No transaction yet. Add your first transaction above.
-              </p>
+              <p className="text-sm text-gray-400">No transactions yet.</p>
             </section>
           )}
         </section>
@@ -308,4 +316,5 @@ export default function Dashboard() {
   );
 }
 
-// rawTextToJsonFile → services/receiptParser.js
+// Reset all to zero // add a confirmation pop up // Top right of the History section // Make the text "Clear All" small and perhaps a lighter gray until hovered.
+// responsiveness fix the desktop screen reduce it to 70-80 percent only
