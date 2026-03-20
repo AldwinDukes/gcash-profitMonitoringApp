@@ -1,7 +1,6 @@
 import { IoWalletOutline } from "react-icons/io5";
 import { IoMdTrendingUp } from "react-icons/io";
-import { GrNotes } from "react-icons/gr";
-import { IoIosMenu } from "react-icons/io";
+import Swal from "sweetalert2";
 
 import { useState } from "react";
 
@@ -38,7 +37,6 @@ export default function Dashboard() {
   );
   const [tempImg, setTempImg] = useState(null);
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   // If isExpanded is true, show everything.
@@ -158,6 +156,23 @@ export default function Dashboard() {
     clearInputForm();
 
     toast.success("Transaction added");
+  };
+
+  const handleReset = () => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setAddTrans([]);
+        Swal.fire("Deleted!", "Your history has been cleared.", "success");
+      }
+    });
   };
 
   return (
@@ -281,7 +296,10 @@ export default function Dashboard() {
             <div className="flex gap-2 items-center">
               <h3 className="font-semibold">Transaction History</h3>
             </div>
-            <button className="font-semibold text-sm text-red-600">
+            <button
+              className="font-semibold text-sm text-red-600"
+              onClick={handleReset}
+            >
               Clear all
             </button>
           </div>
@@ -289,11 +307,13 @@ export default function Dashboard() {
           {addTrans.length > 0 ? (
             <section>
               {/* Map through the SLICED array here */}
+
               {visibleTransactions.map((trans, index) => (
                 <CreateTransactionHistory key={index} {...trans} />
               ))}
 
               {/* Only show the "See All" button if there are more than 3 items */}
+
               {addTrans.length > 3 && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
